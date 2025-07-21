@@ -9,6 +9,7 @@ import { model } from "../../../models";
 import { auth } from "~/server/auth";
 import { streamFromDeepSearch } from "~/deep-search";
 import { upsertChat, getUserTodayRequestCount, recordUserRequest, isUserAdmin } from "~/server/db/queries";
+import { checkRateLimit, recordRateLimit, type RateLimitConfig } from "~/rate-limit";
 
 const langfuse = new Langfuse({
   environment: env.NODE_ENV,
@@ -19,7 +20,43 @@ export const maxDuration = 60;
 // Rate limit configuration
 const DAILY_REQUEST_LIMIT = 1; // Regular users can make 50 requests per day
 
+// Global LLM rate limit configuration (for testing)
+const GLOBAL_RATE_LIMIT_CONFIG: RateLimitConfig = {
+  maxRequests: 1, // Allow only 1 request...
+  windowMs: 1, // ...per 5 seconds (5,000 milliseconds)
+  keyPrefix: "global_llm_rate_limit",
+  maxRetries: 3,
+};
+
 export async function POST(request: Request) {
+  // Global LLM rate limiting check (before authentication for security)
+  const rateLimitCheck = await checkRateLimit(GLOBAL_RATE_LIMIT_CONFIG);
+  
+  if (!rateLimitCheck.allowed) {
+    console.log("Global rate limit exceeded, waiting for reset...");
+    const isAllowed = await rateLimitCheck.retry();
+    
+    if (!isAllowed) {
+      return new Response(
+        JSON.stringify({
+          error: "Global rate limit exceeded",
+          message: "Too many requests are being made globally. Please try again later.",
+          resetTime: new Date(rateLimitCheck.resetTime).toISOString(),
+        }),
+        { 
+          status: 429,
+          headers: {
+            "Content-Type": "application/json",
+            "X-RateLimit-Reset": new Date(rateLimitCheck.resetTime).toISOString(),
+          },
+        }
+      );
+    }
+  }
+  
+  // Record the global rate limit usage
+  await recordRateLimit(GLOBAL_RATE_LIMIT_CONFIG);
+
   const session = await auth();
   
   if (!session?.user) {
@@ -37,6 +74,19 @@ export async function POST(request: Request) {
   const trace = langfuse.trace({
     name: "chat",
     userId: session.user.id,
+  });
+
+  // Add tracing for the rate limit check that already happened
+  const globalRateLimitSpan = trace.span({
+    name: "global-rate-limit-check",
+    input: { config: GLOBAL_RATE_LIMIT_CONFIG },
+  });
+  globalRateLimitSpan.end({
+    output: { 
+      allowed: true, 
+      remaining: rateLimitCheck.remaining,
+      totalHits: rateLimitCheck.totalHits 
+    },
   });
 
   // Check if user is admin
