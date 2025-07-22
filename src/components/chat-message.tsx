@@ -1,11 +1,11 @@
 import ReactMarkdown, { type Components } from "react-markdown";
 import type { Message } from "ai";
 
-// Extract MessagePart type from Message
-export type MessagePart = NonNullable<Message["parts"]>[number];
+type MessagePart = NonNullable<Message["parts"]>[number];
 
 interface ChatMessageProps {
-  message: Message;
+  parts: MessagePart[];
+  role: string;
   userName: string;
 }
 
@@ -41,112 +41,65 @@ const Markdown = ({ children }: { children: string }) => {
   return <ReactMarkdown components={components}>{children}</ReactMarkdown>;
 };
 
-const ToolInvocationPart = ({ part }: { part: MessagePart & { type: "tool-invocation" } }) => {
+const ToolInvocation = ({
+  part,
+}: {
+  part: Extract<MessagePart, { type: "tool-invocation" }>;
+}) => {
   const { toolInvocation } = part;
-  
-  if (toolInvocation.state === "partial-call") {
-    return (
-      <div className="mb-4 rounded-lg border border-gray-600 bg-gray-700 p-3">
-        <div className="mb-2 flex items-center gap-2">
-          <div className="size-2 animate-pulse rounded-full bg-yellow-400" />
-          <span className="text-sm font-medium text-gray-300">
-            Calling {toolInvocation.toolName}...
-          </span>
-        </div>
-      </div>
-    );
-  }
+  const { state, toolName, args } = toolInvocation;
 
-  if (toolInvocation.state === "call") {
-    return (
-      <div className="mb-4 rounded-lg border border-gray-600 bg-gray-700 p-3">
-        <div className="mb-2 flex items-center gap-2">
-          <div className="size-2 rounded-full bg-blue-400" />
-          <span className="text-sm font-medium text-gray-300">
-            {toolInvocation.toolName}
-          </span>
-        </div>
-        <div className="text-xs text-gray-400">
-          <pre className="whitespace-pre-wrap">
-            {JSON.stringify(toolInvocation.args, null, 2)}
+  return (
+    <div className="mb-4 rounded-lg border border-gray-700 bg-gray-800 p-4">
+      <div className="mb-2 flex items-center gap-2">
+        <span className="text-sm font-medium text-gray-400">Tool:</span>
+        <span className="text-sm text-gray-300">{toolName}</span>
+      </div>
+      <div className="mb-2">
+        <span className="text-sm font-medium text-gray-400">State:</span>
+        <span className="ml-2 text-sm text-gray-300">{state}</span>
+      </div>
+      <div className="mb-2">
+        <span className="text-sm font-medium text-gray-400">Arguments:</span>
+        <pre className="mt-1 overflow-x-auto rounded bg-gray-900 p-2 text-sm text-gray-300">
+          {JSON.stringify(args, null, 2)}
+        </pre>
+      </div>
+      {toolInvocation.state === "result" && toolInvocation.result && (
+        <div>
+          <span className="text-sm font-medium text-gray-400">Result:</span>
+          <pre className="mt-1 overflow-x-auto rounded bg-gray-900 p-2 text-sm text-gray-300">
+            {JSON.stringify(toolInvocation.result, null, 2)}
           </pre>
         </div>
-      </div>
-    );
-  }
-
-  if (toolInvocation.state === "result") {
-    return (
-      <div className="mb-4 rounded-lg border border-gray-600 bg-gray-700 p-3">
-        <div className="mb-2 flex items-center gap-2">
-          <div className="size-2 rounded-full bg-green-400" />
-          <span className="text-sm font-medium text-gray-300">
-            {toolInvocation.toolName} completed
-          </span>
-        </div>
-        <div className="text-xs text-gray-400">
-          <details className="cursor-pointer">
-            <summary className="hover:text-gray-300">View search results</summary>
-            <pre className="mt-2 whitespace-pre-wrap">
-              {JSON.stringify(toolInvocation.result, null, 2)}
-            </pre>
-          </details>
-        </div>
-      </div>
-    );
-  }
-
-  return null;
+      )}
+    </div>
+  );
 };
 
-const TextPart = ({ part }: { part: MessagePart & { type: "text" } }) => {
-  return <Markdown>{part.text}</Markdown>;
-};
-
-const StepStartPart = ({ part }: { part: MessagePart & { type: "step-start" } }) => {
-  // Don't render anything for step-start parts to avoid clutter
-  return null;
-};
-
-const MessagePartRenderer = ({ part }: { part: MessagePart }) => {
-  switch (part.type) {
-    case "text":
-      return <TextPart part={part} />;
-    case "tool-invocation":
-      return <ToolInvocationPart part={part} />;
-    case "step-start":
-      return <StepStartPart part={part} />;
-    default:
-      // For any unhandled part types, just render a placeholder
-      return (
-        <div className="mb-2 rounded-lg border border-gray-600 bg-gray-700 p-2 text-xs text-gray-400">
-          Unsupported part type: {"type" in part ? String(part.type) : "unknown"}
-        </div>
-      );
-  }
-};
-
-export const ChatMessage = ({ message, userName }: ChatMessageProps) => {
-  const isAI = message.role === "assistant";
-  
-  // Use parts if available, fallback to content for backwards compatibility
-  const parts = message.parts || (message.content ? [{ type: "text" as const, text: message.content }] : []);
+export const ChatMessage = ({ parts, role, userName }: ChatMessageProps) => {
+  const isAI = role === "assistant";
 
   return (
     <div className="mb-6">
       <div
-        className={`rounded-lg p-4 ${
-          isAI ? "bg-gray-800 text-gray-300" : "bg-gray-900 text-gray-300"
-        }`}
+        className={`rounded-lg p-4 ${isAI ? "bg-gray-800 text-gray-300" : "bg-gray-900 text-gray-300"
+          }`}
       >
         <p className="mb-2 text-sm font-semibold text-gray-400">
           {isAI ? "AI" : userName}
         </p>
 
         <div className="prose prose-invert max-w-none">
-          {parts.map((part, index) => (
-            <MessagePartRenderer key={`${part.type}-${index}`} part={part} />
-          ))}
+          {parts.map((part, index) => {
+            if (part.type === "text") {
+              return <Markdown key={index}>{part.text}</Markdown>;
+            }
+            if (part.type === "tool-invocation") {
+              return <ToolInvocation key={index} part={part} />;
+            }
+            return null;
+          })}
         </div>
       </div>
     </div>

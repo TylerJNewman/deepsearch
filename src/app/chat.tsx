@@ -153,7 +153,8 @@ export const ChatPage = ({ userName, chatId, isNewChat, initialMessages }: ChatP
               return (
                 <ChatMessage
                   key={message.id ?? index}
-                  message={message}
+                  parts={message.parts}
+                  role={message.role}
                   userName={userName}
                 />
               );
