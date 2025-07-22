@@ -5,7 +5,22 @@ import { createScorer } from "evalite";
 import { generateObject } from "ai";
 import { z } from "zod";
 import { factualityModel } from "~/models";
-import { evaluationQuestions } from "./questions";
+import { devData } from "./dev";
+import { ciData } from "./ci";
+import { regressionData } from "./regression";
+import { env } from "~/env";
+
+type EvalData = { input: Message[]; expected: string }[];
+
+const data: EvalData = [...devData];
+
+// If CI, add the CI data
+if (env.EVAL_DATASET === "ci") {
+  data.push(...ciData);
+  // If Regression, add the regression data AND the CI data
+} else if (env.EVAL_DATASET === "regression") {
+  data.push(...ciData, ...regressionData);
+}
 
 const checkFactuality = async (opts: {
   question: string;
@@ -95,11 +110,7 @@ const Factuality = createScorer<
 });
 
 evalite("Deep Search Eval", {
-  data: async (): Promise<
-    { input: Message[]; expected: string }[]
-  > => {
-    return evaluationQuestions;
-  },
+  data: () => data,
   task: async (input) => {
     // Use fresh data to test updated prompt
     return devUtils.askWithFreshData(input);
