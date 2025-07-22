@@ -17,6 +17,7 @@ export declare namespace TavilyTool {
     timeRange?: "day" | "week" | "month" | "year" | "d" | "w" | "m" | "y";
     days?: number;
     country?: string;
+    forceRefresh?: boolean; // Skip cache and force fresh API call
   };
 
   export interface SearchResult {
@@ -124,6 +125,32 @@ const fetchFromTavily = cacheWithRedis(
       throw new Error(`Tavily API error: ${error}`);
     }
   },
+  {
+    getDuration: (searchInput: TavilyTool.SearchInput) => {
+      // Queries about recent information should have shorter cache duration
+      const freshnessKeywords = [
+        'latest', 'new', 'recent', 'update', 'release', 'version', 'current',
+        'features', 'changelog', 'announcement', 'launch', 'beta', 'stable'
+      ];
+      
+      const query = searchInput.query.toLowerCase();
+      const needsFreshInfo = freshnessKeywords.some(keyword => query.includes(keyword));
+      
+      // Recent time ranges need shorter cache
+      const isRecentQuery = ['day', 'week', 'd', 'w'].includes(searchInput.timeRange || '');
+      
+      if (isRecentQuery) {
+        return 60 * 30; // 30 minutes for recent searches
+      }
+      if (needsFreshInfo) {
+        return 60 * 60 * 2; // 2 hours for queries about fresh information
+      }
+      return 60 * 60 * 6; // 6 hours for general queries
+    },
+    shouldSkipCache: (searchInput: TavilyTool.SearchInput) => {
+      return searchInput.forceRefresh === true;
+    }
+  }
 );
 
 export const searchTavily = async (
