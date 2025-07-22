@@ -1,5 +1,5 @@
 import { evalite } from "evalite";
-import { askDeepSearch } from "~/deep-search";
+import { askDeepSearch, devUtils } from "~/deep-search";
 import type { Message } from "ai";
 import { createScorer } from "evalite";
 import { generateObject } from "ai";
@@ -101,7 +101,8 @@ evalite("Deep Search Eval", {
     return evaluationQuestions;
   },
   task: async (input) => {
-    return askDeepSearch(input);
+    // Use fresh data to test updated prompt
+    return devUtils.askWithFreshData(input);
   },
   scorers: [
     {

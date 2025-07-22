@@ -9,65 +9,58 @@ export const evaluationQuestions: { input: Message[]; expected: string }[] = [
         content: "In the Gottman Method, what are the 'Four Horsemen of the Apocalypse' and which one is considered the most predictive of relationship failure?",
       },
     ],
-    expected: `The Four Horsemen of the Apocalypse are communication styles that can predict relationship failure. They are:
-
-1) Criticism - attacking your partner's personality or character
-2) Contempt - attacking your partner's sense of self with an intent to insult or abuse them
-3) Defensiveness - seeing yourself as the victim in arguments
-4) Stonewalling - withdrawing from the relationship to avoid conflict
-
-While all four are detrimental, contempt is considered the most predictive of relationship failure. Contempt involves a lack of respect and is often displayed through sarcasm, cynicism, name-calling, eye-rolling, mockery, and hostile humor.`,
+    expected: "The Four Horsemen of the Apocalypse are criticism, contempt, defensiveness, and stonewalling. Among these, contempt is considered the most predictive of divorce. Contempt involves statements from a position of moral superiority, including behaviors like sarcasm, cynicism, name-calling, eye-rolling, and mockery.",
   },
-  // {
-  //   input: [
-  //     {
-  //       id: "2",
-  //       role: "user",
-  //       content: "What percentage of relationship problems do the Gottmans identify as 'perpetual' or unsolvable?",
-  //     },
-  //   ],
-  //   expected: "Drs. John and Julie Gottman's research indicates that 69% of all relationship problems are perpetual, meaning they are unsolvable and will be a recurring theme throughout the relationship.",
-  // },
-  // {
-  //   input: [
-  //     {
-  //       id: "3",
-  //       role: "user",
-  //       content: "What does the Gottman Institute's research reveal about the importance of 'turning toward' bids for connection for relationship success?",
-  //     },
-  //   ],
-  //   expected: "The Gottmans' research found that couples who stay together and are happy turn towards each other's bids for connection 86% of the time. In contrast, couples who end up divorcing only turn towards bids 33% of the time.",
-  // },
-  // {
-  //   input: [
-  //     {
-  //       id: "4",
-  //       role: "user",
-  //       content: "Why do the Gottmans recommend a 'six-second kiss' as a ritual of connection for couples?",
-  //     },
-  //   ],
-  //   expected: "The Gottmans recommend a six-second kiss because a kiss of that duration is long enough to release oxytocin, a hormone that creates a sense of bonding, connection, and psychological safety between partners.",
-  // },
-  // {
-  //   input: [
-  //     {
-  //       id: "5",
-  //       role: "user",
-  //       content: "In Gottman Method Couples Therapy, what does the term 'flooding' describe?",
-  //     },
-  //   ],
-  //   expected: "In the Gottman Method, 'flooding' describes a physiological state of fight-or-flight where the body is overwhelmed by stress hormones like cortisol and adrenaline during a conflict. This state makes it impossible to listen, process information, or engage in creative problem-solving.",
-  // },
-  // {
-  //   input: [
-  //     {
-  //       id: "6",
-  //       role: "user",
-  //       content: "What is the Gottman-approved strategy for managing 'flooding' during a conflict?",
-  //     },
-  //   ],
-  //   expected: "The Gottman-approved strategy is to take a time-out. The person feeling flooded should state they need a break, specify a time they will return to the conversation (e.g., in 30 minutes), and then spend the break doing something self-soothing and distracting, not ruminating on the fight.",
-  // },
+  {
+    input: [
+      {
+        id: "2",
+        role: "user",
+        content: "What percentage of relationship problems do the Gottmans identify as 'perpetual' or unsolvable?",
+      },
+    ],
+    expected: "Drs. John and Julie Gottman's research indicates that 69% of all relationship problems are perpetual, meaning they are unsolvable and will be a recurring theme throughout the relationship.",
+  },
+  {
+    input: [
+      {
+        id: "3",
+        role: "user",
+        content: "What does the Gottman Institute's research reveal about the importance of 'turning toward' bids for connection for relationship success?",
+      },
+    ],
+    expected: "The Gottmans' research found that couples who stay together and are happy turn towards each other's bids for connection 86% of the time. In contrast, couples who end up divorcing only turn towards bids 33% of the time.",
+  },
+  {
+    input: [
+      {
+        id: "4",
+        role: "user",
+        content: "Why do the Gottmans recommend a 'six-second kiss' as a ritual of connection for couples?",
+      },
+    ],
+    expected: "The Gottmans recommend a six-second kiss because a kiss of that duration is long enough to release oxytocin, a hormone that creates a sense of bonding, connection, and psychological safety between partners.",
+  },
+  {
+    input: [
+      {
+        id: "5",
+        role: "user",
+        content: "In Gottman Method Couples Therapy, what does the term 'flooding' describe?",
+      },
+    ],
+    expected: "In the Gottman Method, 'flooding' describes a physiological state of fight-or-flight where the body is overwhelmed by stress hormones like cortisol and adrenaline during a conflict. This state makes it impossible to listen, process information, or engage in creative problem-solving.",
+  },
+  {
+    input: [
+      {
+        id: "6",
+        role: "user",
+        content: "What is the Gottman-approved strategy for managing 'flooding' during a conflict?",
+      },
+    ],
+    expected: "The Gottman-approved strategy is to take a time-out. The person feeling flooded should state they need a break, specify a time they will return to the conversation (e.g., in 30 minutes), and then spend the break doing something self-soothing and distracting, not ruminating on the fight.",
+  },
   // {
   //   input: [
   //     {
