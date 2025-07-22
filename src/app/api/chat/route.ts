@@ -18,17 +18,19 @@ const langfuse = new Langfuse({
 export const maxDuration = 60;
 
 // Rate limit configuration
-const DAILY_REQUEST_LIMIT = 1; // Regular users can make 50 requests per day
+const DAILY_REQUEST_LIMIT = 50; // Regular users can make 50 requests per day
 
 // Global LLM rate limit configuration (for testing)
 const GLOBAL_RATE_LIMIT_CONFIG: RateLimitConfig = {
   maxRequests: 1, // Allow only 1 request...
-  windowMs: 1, // ...per 5 seconds (5,000 milliseconds)
+  windowMs: 5000, // ...per 5 seconds (5,000 milliseconds)
   keyPrefix: "global_llm_rate_limit",
   maxRetries: 3,
 };
 
 export async function POST(request: Request) {
+  console.log("Chat API called at:", new Date().toISOString());
+  
   // Global LLM rate limiting check (before authentication for security)
   const rateLimitCheck = await checkRateLimit(GLOBAL_RATE_LIMIT_CONFIG);
   
@@ -37,6 +39,7 @@ export async function POST(request: Request) {
     const isAllowed = await rateLimitCheck.retry();
     
     if (!isAllowed) {
+      console.log("Rate limit retry failed, returning 429");
       return new Response(
         JSON.stringify({
           error: "Global rate limit exceeded",
@@ -58,8 +61,10 @@ export async function POST(request: Request) {
   await recordRateLimit(GLOBAL_RATE_LIMIT_CONFIG);
 
   const session = await auth();
+  console.log("Auth session:", session?.user ? "Valid" : "Invalid");
   
   if (!session?.user) {
+    console.log("Unauthorized request");
     return new Response("Unauthorized", { status: 401 });
   }
 
@@ -69,6 +74,12 @@ export async function POST(request: Request) {
     isNewChat?: boolean;
   };
   const { messages, chatId, isNewChat } = body;
+  console.log("Request body:", { 
+    messageCount: messages.length, 
+    chatId, 
+    isNewChat,
+    lastMessage: messages[messages.length - 1]?.content?.slice(0, 100)
+  });
 
   // Create Langfuse trace - we'll update sessionId later
   const trace = langfuse.trace({
@@ -232,8 +243,8 @@ export async function POST(request: Request) {
       result.mergeIntoDataStream(dataStream);
     },
     onError: (e) => {
-      console.error(e);
-      return "Oops, an error occured!";
+      console.error("Stream error:", e);
+      return "Oops, an error occurred!";
     },
   });
 } 
