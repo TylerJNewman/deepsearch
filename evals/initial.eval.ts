@@ -9,6 +9,7 @@ import { devData } from "./dev";
 import { ciData } from "./ci";
 import { regressionData } from "./regression";
 import { env } from "~/env";
+import { AnswerRelevancy } from "./answer-relevancy";
 
 type EvalData = { input: Message[]; expected: string }[];
 
@@ -128,5 +129,6 @@ evalite("Deep Search Eval", {
       },
     },
     Factuality,
+    AnswerRelevancy,
   ],
 }); 
