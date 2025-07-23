@@ -18,7 +18,7 @@ export const streamFromDeepSearch = (opts: {
   streamText({
     model,
     messages: opts.messages,
-    maxSteps: 10,
+    maxSteps: env.MAX_STEPS,
     system: DEEP_SEARCH_SYSTEM_PROMPT,
     tools: {
       searchWeb: {
@@ -42,8 +42,9 @@ export const streamFromDeepSearch = (opts: {
             );
             
             // Apply smart defaults
-            const smartTimeRange = timeRange || (needsFreshInfo ? "month" : undefined);
-            const smartSearchDepth = searchDepth || "advanced";
+            const smartTimeRange =
+              timeRange || (needsFreshInfo ? env.DEFAULT_FRESHNESS_TIME_RANGE : undefined);
+            const smartSearchDepth = searchDepth || env.DEFAULT_SEARCH_DEPTH;
             const smartTopic = topic || "general";
             
             // Auto-enable forceRefresh in development for fresh info queries
@@ -93,11 +94,19 @@ export const streamFromDeepSearch = (opts: {
       },
       scrapePages: {
         parameters: z.object({
-          urls: z.array(z.string()).describe("Array of URLs to scrape for full content"),
-          maxRetries: z.number().optional().describe("Maximum number of retry attempts per URL (default: 3)"),
+          urls: z
+            .array(z.string())
+            .describe("Array of URLs to scrape for full content"),
+          maxRetries: z
+            .number()
+            .optional()
+            .describe("Maximum number of retry attempts per URL (default: 3)"),
         }),
         execute: async ({ urls, maxRetries }) => {
-          const result = await scrapePages({ urls, maxRetries });
+          const result = await scrapePages({
+            urls,
+            maxRetries: maxRetries || env.DEFAULT_SCRAPER_MAX_RETRIES,
+          });
           return result;
         },
       },

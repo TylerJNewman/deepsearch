@@ -25,6 +25,12 @@ export const env = createEnv({
     LANGFUSE_BASEURL: z.string().url(),
     EVAL_DATASET: z.enum(["dev", "ci", "regression"]).optional().default("dev"),
     SEARCH_RESULTS_COUNT: z.coerce.number().default(10),
+    MAX_STEPS: z.coerce.number().default(10),
+    DEFAULT_SEARCH_DEPTH: z.enum(["basic", "advanced"]).default("advanced"),
+    DEFAULT_FRESHNESS_TIME_RANGE: z
+      .enum(["day", "week", "month", "year"])
+      .default("month"),
+    DEFAULT_SCRAPER_MAX_RETRIES: z.coerce.number().default(3),
   },
 
   /**
