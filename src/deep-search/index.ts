@@ -8,6 +8,7 @@ import { model } from "../models";
 import { searchTavily, type TavilyTool } from "../tavily";
 import { scrapePages } from "../scraper";
 import { DEEP_SEARCH_SYSTEM_PROMPT } from "./system-prompt";
+import { env } from "~/env";
 
 export const streamFromDeepSearch = (opts: {
   messages: Message[];
@@ -52,9 +53,9 @@ export const streamFromDeepSearch = (opts: {
                         console.log(`Searching with smart defaults: timeRange=${smartTimeRange}, depth=${smartSearchDepth}, fresh=${needsFreshInfo}, forceRefresh=${shouldForceRefresh}`);
             
             const results = await searchTavily(
-              { 
+              {
                 query,
-                maxResults: 10,
+                maxResults: env.SEARCH_RESULTS_COUNT,
                 searchDepth: smartSearchDepth,
                 topic: smartTopic,
                 timeRange: smartTimeRange,
