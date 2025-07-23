@@ -31,6 +31,9 @@ export const env = createEnv({
       .enum(["day", "week", "month", "year"])
       .default("month"),
     DEFAULT_SCRAPER_MAX_RETRIES: z.coerce.number().default(3),
+    DAILY_REQUEST_LIMIT: z.coerce.number().default(50),
+    GLOBAL_RATE_LIMIT_MAX_REQUESTS: z.coerce.number().default(1),
+    GLOBAL_RATE_LIMIT_WINDOW_MS: z.coerce.number().default(5000),
   },
 
   /**

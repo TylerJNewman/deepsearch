@@ -17,13 +17,10 @@ const langfuse = new Langfuse({
 
 export const maxDuration = 60;
 
-// Rate limit configuration
-const DAILY_REQUEST_LIMIT = 50; // Regular users can make 50 requests per day
-
 // Global LLM rate limit configuration (for testing)
 const GLOBAL_RATE_LIMIT_CONFIG: RateLimitConfig = {
-  maxRequests: 1, // Allow only 1 request...
-  windowMs: 5000, // ...per 5 seconds (5,000 milliseconds)
+  maxRequests: env.GLOBAL_RATE_LIMIT_MAX_REQUESTS,
+  windowMs: env.GLOBAL_RATE_LIMIT_WINDOW_MS,
   keyPrefix: "global_llm_rate_limit",
   maxRetries: 3,
 };
@@ -118,30 +115,30 @@ export async function POST(request: Request) {
     });
     const todayRequestCount = await getUserTodayRequestCount(session.user.id);
     getRateSpan.end({
-      output: { requestCount: todayRequestCount, dailyLimit: DAILY_REQUEST_LIMIT },
+      output: {
+        requestCount: todayRequestCount,
+        dailyLimit: env.DAILY_REQUEST_LIMIT,
+      },
     });
-    
-    if (todayRequestCount >= DAILY_REQUEST_LIMIT) {
+
+    if (todayRequestCount >= env.DAILY_REQUEST_LIMIT) {
       const errorResponse = {
         error: "Rate limit exceeded",
-        message: `You have reached the daily limit of ${DAILY_REQUEST_LIMIT} requests. Please try again tomorrow.`,
+        message: `You have reached the daily limit of ${env.DAILY_REQUEST_LIMIT} requests. Please try again tomorrow.`,
         requestsToday: todayRequestCount,
-        dailyLimit: DAILY_REQUEST_LIMIT,
+        dailyLimit: env.DAILY_REQUEST_LIMIT,
         resetTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
       };
-      
-      return new Response(
-        JSON.stringify(errorResponse),
-        { 
-          status: 429,
-          headers: {
-            "Content-Type": "application/json",
-            "X-RateLimit-Limit": DAILY_REQUEST_LIMIT.toString(),
-            "X-RateLimit-Remaining": "0",
-            "X-RateLimit-Reset": errorResponse.resetTime,
-          },
-        }
-      );
+
+      return new Response(JSON.stringify(errorResponse), {
+        status: 429,
+        headers: {
+          "Content-Type": "application/json",
+          "X-RateLimit-Limit": env.DAILY_REQUEST_LIMIT.toString(),
+          "X-RateLimit-Remaining": "0",
+          "X-RateLimit-Reset": errorResponse.resetTime,
+        },
+      });
     }
   }
 
