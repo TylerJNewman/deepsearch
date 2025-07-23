@@ -61,6 +61,8 @@ export function generateEvaluatePrompt({
     Verdict Guidelines:
     - "yes": Statement explicitly and directly answers the input question when it:
         * Contains specific answer to the question asked (e.g., "The color of the sky is blue")
+        * Provides a definition or explanation of the primary subject of the input question.
+        * Provides key characteristics, implications, or context directly related to the primary subject of the question.
         * States explicit relationship between key concepts (e.g., "X is the CEO of company Y")
         * Can stand alone as a complete answer
         * Contains appropriate question-type response (e.g., location for "where", person for "who")
