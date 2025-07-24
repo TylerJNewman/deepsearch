@@ -55,6 +55,7 @@ export async function upsertChat({
           chatId,
           role: message.role,
           parts: message.parts ?? message.content ?? "",
+          annotations: message.annotations || null,
           order: index,
         }))
       );
@@ -89,6 +90,7 @@ export async function getChat(chatId: string, userId: string) {
       role: msg.role as "user" | "assistant" | "system",
       parts: typeof msg.parts === "string" ? [{ type: "text", text: msg.parts }] : msg.parts,
       content: typeof msg.parts === "string" ? msg.parts : JSON.stringify(msg.parts),
+      annotations: msg.annotations || undefined,
     })),
   };
 }

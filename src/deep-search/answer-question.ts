@@ -1,5 +1,5 @@
 import type { SystemContext } from "./system-context";
-import { streamText, type StreamTextResult, smoothStream } from "ai";
+import { streamText, type StreamTextResult, smoothStream, type LanguageModelUsage } from "ai";
 import { model } from "../models";
 import tone from "./tone";
 import boldedText from "./bolded.text";
@@ -9,13 +9,14 @@ import { markdownJoinerTransform } from "./markdown-joiner";
 export interface AnswerQuestionOptions {
 	isFinal: boolean;
 	langfuseTraceId?: string;
+	onFinish?: (result: { text: string; finishReason: string; usage: LanguageModelUsage; response: unknown }) => Promise<void> | void;
 }
 
 export const answerQuestion = (
 	context: SystemContext,
 	options: AnswerQuestionOptions,
 ): StreamTextResult<Record<string, never>, string> => {
-	const { isFinal, langfuseTraceId } = options;
+	const { isFinal, langfuseTraceId, onFinish } = options;
 	const messageHistory = context.getMessageHistory();
 
 	return streamText({
@@ -27,6 +28,7 @@ export const answerQuestion = (
 				chunking: "line",
 			}),
 		],
+		onFinish,
 		system: `
 <current_context>
 Current date and time: ${new Date().toLocaleString()}

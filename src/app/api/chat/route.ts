@@ -8,6 +8,7 @@ import { env } from "~/env";
 import { model } from "../../../models";
 import { auth } from "~/server/auth";
 import { streamFromDeepSearch } from "~/deep-search";
+import type { OurMessageAnnotation } from "~/deep-search/get-next-action";
 import { upsertChat, getUserTodayRequestCount, recordUserRequest, isUserAdmin } from "~/server/db/queries";
 import { checkRateLimit, recordRateLimit, type RateLimitConfig } from "~/rate-limit";
 
@@ -159,6 +160,9 @@ export async function POST(request: Request) {
         sessionId: chatId,
       });
 
+      // Store annotations for the current conversation
+      const annotations: OurMessageAnnotation[] = [];
+
       // Create the chat immediately if it's a new chat (before streaming)
       // This protects against broken streams, timeouts, or cancellations
       if (isNewChat) {
@@ -189,6 +193,13 @@ export async function POST(request: Request) {
         });
       }
 
+      const writeMessageAnnotation = (annotation: OurMessageAnnotation) => {
+        // Save the annotation in-memory
+        annotations.push(annotation);
+        // Send it to the client
+        dataStream.writeMessageAnnotation(annotation);
+      };
+
       const result = await streamFromDeepSearch({
         messages,
         telemetry: {
@@ -198,12 +209,32 @@ export async function POST(request: Request) {
             langfuseTraceId: trace.id,
           },
         },
-        writeMessageAnnotation: (annotation) => {
-          dataStream.writeMessageAnnotation(annotation);
-        },
-        onFinish: async () => {
-          // TODO: Handle persistence when we tackle that later
-          // For now, just flush the trace to Langfuse
+        writeMessageAnnotation: writeMessageAnnotation,
+        onFinish: async (finishResult) => {
+          try {
+            // Get the final text from the result
+            const assistantMessage: Message = {
+              id: crypto.randomUUID(),
+              role: "assistant",
+              content: finishResult.text,
+              annotations: annotations.length > 0 ? annotations : undefined,
+            };
+
+            // Add the assistant message to our messages array
+            const updatedMessages = [...messages, assistantMessage];
+
+            // Persist the updated conversation to the database
+            await upsertChat({
+              userId: session.user.id,
+              chatId: chatId,
+              messages: updatedMessages,
+              title: messages[0]?.content?.slice(0, 100) ?? "New Chat",
+            });
+          } catch (error) {
+            console.error("Failed to persist conversation:", error);
+          }
+
+          // Flush the trace to Langfuse
           await langfuse.flushAsync();
         },
       });

@@ -4,19 +4,20 @@ import { getNextAction } from "./get-next-action";
 import { searchTavily } from "../tavily";
 import { scrapePages } from "../scraper";
 import { answerQuestion } from "./answer-question";
-import type { Message, StreamTextResult } from "ai";
+import type { Message, StreamTextResult, LanguageModelUsage } from "ai";
 
 export interface RunAgentLoopOptions {
 	messages: Message[];
 	maxSteps?: number;
 	langfuseTraceId?: string;
 	writeMessageAnnotation?: (annotation: OurMessageAnnotation) => void;
+	onFinish?: (result: { text: string; finishReason: string; usage: LanguageModelUsage; response: unknown }) => Promise<void> | void;
 }
 
 export const runAgentLoop = async (
 	options: RunAgentLoopOptions,
 ): Promise<StreamTextResult<Record<string, never>, string>> => {
-	const { messages, maxSteps = 10, langfuseTraceId, writeMessageAnnotation } = options;
+	const { messages, maxSteps = 10, langfuseTraceId, writeMessageAnnotation, onFinish } = options;
 	
 	// Create context with the full conversation history
 	const ctx = new SystemContext(messages);
@@ -90,7 +91,7 @@ export const runAgentLoop = async (
 			}
 
 			case "answer": {
-				const answer = answerQuestion(ctx, { isFinal: false, langfuseTraceId });
+				const answer = answerQuestion(ctx, { isFinal: false, langfuseTraceId, onFinish });
 				return answer;
 			}
 
@@ -104,6 +105,6 @@ export const runAgentLoop = async (
 	}
 
 	// If we've reached max steps, make a final attempt
-	const finalAnswer = answerQuestion(ctx, { isFinal: true, langfuseTraceId });
+	const finalAnswer = answerQuestion(ctx, { isFinal: true, langfuseTraceId, onFinish });
 	return finalAnswer;
 };

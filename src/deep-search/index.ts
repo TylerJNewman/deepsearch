@@ -2,6 +2,7 @@ import type {
 	Message,
 	TelemetrySettings,
 	StreamTextResult,
+	LanguageModelUsage,
 } from "ai";
 import type { streamText } from "ai";
 import { z } from "zod";
@@ -15,7 +16,7 @@ import type { OurMessageAnnotation } from "./get-next-action";
 
 export const streamFromDeepSearch = async (opts: {
 	messages: Message[];
-	onFinish: Parameters<typeof streamText>[0]["onFinish"];
+	onFinish?: (result: { text: string; finishReason: string; usage: LanguageModelUsage; response: unknown }) => Promise<void> | void;
 	telemetry: TelemetrySettings;
 	writeMessageAnnotation?: (annotation: OurMessageAnnotation) => void;
 }): Promise<StreamTextResult<Record<string, never>, string>> => {
@@ -26,6 +27,7 @@ export const streamFromDeepSearch = async (opts: {
 			? opts.telemetry.metadata.langfuseTraceId 
 			: undefined,
 		writeMessageAnnotation: opts.writeMessageAnnotation,
+		onFinish: opts.onFinish,
 	});
 };
 
