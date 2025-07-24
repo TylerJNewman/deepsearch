@@ -5,6 +5,7 @@ import { ChatPage } from "./chat.tsx";
 import { AuthButton } from "../components/auth-button.tsx";
 import { getChats, getChat } from "~/server/db/queries";
 import type { Message } from "ai";
+import type { OurMessageAnnotation } from "~/deep-search/get-next-action";
 
 export default async function HomePage({
   searchParams,
@@ -33,6 +34,7 @@ export default async function HomePage({
         role: msg.role,
         parts: msg.parts as Message["parts"],
         content: msg.content,
+        annotations: msg.annotations as OurMessageAnnotation[] | undefined,
       }));
     }
   }
