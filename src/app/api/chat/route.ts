@@ -12,6 +12,7 @@ import type { OurMessageAnnotation } from "~/deep-search/get-next-action";
 import { upsertChat, getUserTodayRequestCount, recordUserRequest, isUserAdmin } from "~/server/db/queries";
 import { checkRateLimit, recordRateLimit, type RateLimitConfig } from "~/rate-limit";
 import { generateChatTitle } from "~/utils";
+import { geolocation } from "@vercel/functions";
 
 const langfuse = new Langfuse({
   environment: env.NODE_ENV,
@@ -30,6 +31,25 @@ const GLOBAL_RATE_LIMIT_CONFIG: RateLimitConfig = {
 export async function POST(request: Request) {
   console.log("Chat API called at:", new Date().toISOString());
   
+  if (process.env.NODE_ENV === "development") {
+    request.headers.set("x-vercel-ip-country", "US");
+    request.headers.set(
+      "x-vercel-ip-country-region",
+      "CA",
+    );
+    request.headers.set("x-vercel-ip-city", "Mar Vista");
+  }
+
+  const { longitude, latitude, city, country } =
+    geolocation(request);
+
+  const location = {
+    longitude,
+    latitude,
+    city,
+    country,
+  };
+
   // Global LLM rate limiting check (before authentication for security)
   const rateLimitCheck = await checkRateLimit(GLOBAL_RATE_LIMIT_CONFIG);
   
@@ -218,6 +238,7 @@ export async function POST(request: Request) {
           },
         },
         writeMessageAnnotation: writeMessageAnnotation,
+        location,
         onFinish: async (finishResult) => {
           try {
             // Get the final text from the result

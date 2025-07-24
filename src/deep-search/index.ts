@@ -19,6 +19,12 @@ export const streamFromDeepSearch = async (opts: {
 	onFinish?: (result: { text: string; finishReason: string; usage: LanguageModelUsage; response: unknown }) => Promise<void> | void;
 	telemetry: TelemetrySettings;
 	writeMessageAnnotation?: (annotation: OurMessageAnnotation) => void;
+	location?: {
+		latitude?: string;
+		longitude?: string;
+		city?: string;
+		country?: string;
+	};
 }): Promise<StreamTextResult<Record<string, never>, string>> => {
 	return runAgentLoop({
 		messages: opts.messages,
@@ -28,6 +34,7 @@ export const streamFromDeepSearch = async (opts: {
 			: undefined,
 		writeMessageAnnotation: opts.writeMessageAnnotation,
 		onFinish: opts.onFinish,
+		location: opts.location,
 	});
 };
 

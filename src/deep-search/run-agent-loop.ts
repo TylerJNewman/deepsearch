@@ -12,15 +12,21 @@ export interface RunAgentLoopOptions {
 	langfuseTraceId?: string;
 	writeMessageAnnotation?: (annotation: OurMessageAnnotation) => void;
 	onFinish?: (result: { text: string; finishReason: string; usage: LanguageModelUsage; response: unknown }) => Promise<void> | void;
+	location?: {
+		latitude?: string;
+		longitude?: string;
+		city?: string;
+		country?: string;
+	};
 }
 
 export const runAgentLoop = async (
 	options: RunAgentLoopOptions,
 ): Promise<StreamTextResult<Record<string, never>, string>> => {
-	const { messages, maxSteps = 10, langfuseTraceId, writeMessageAnnotation, onFinish } = options;
+	const { messages, maxSteps = 10, langfuseTraceId, writeMessageAnnotation, onFinish, location } = options;
 	
 	// Create context with the full conversation history
-	const ctx = new SystemContext(messages);
+	const ctx = new SystemContext(messages, location);
 
 	while (!ctx.shouldStop() && ctx.getCurrentStep() < maxSteps) {
 		const nextAction = await getNextAction(ctx, { langfuseTraceId });

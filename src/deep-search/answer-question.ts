@@ -18,6 +18,7 @@ export const answerQuestion = (
 ): StreamTextResult<Record<string, never>, string> => {
 	const { isFinal, langfuseTraceId, onFinish } = options;
 	const messageHistory = context.getMessageHistory();
+	const userLocation = context.getUserLocation();
 
 	return streamText({
 		model,
@@ -32,6 +33,7 @@ export const answerQuestion = (
 		system: `
 <current_context>
 Current date and time: ${new Date().toLocaleString()}
+${userLocation ? `User's location: ${JSON.stringify(userLocation)}` : ""}
 </current_context>
 
 <core_identity>

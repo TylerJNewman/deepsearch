@@ -17,6 +17,13 @@ type ScrapeResult = {
 	result: string;
 };
 
+type UserLocation = {
+	latitude?: string;
+	longitude?: string;
+	city?: string;
+	country?: string;
+};
+
 const toQueryResult = (query: QueryResultSearchResult) =>
 	[`### ${query.date} - ${query.title}`, query.url, query.snippet].join("\n\n");
 
@@ -41,8 +48,16 @@ export class SystemContext {
 	 */
 	private scrapeHistory: ScrapeResult[] = [];
 
-	constructor(messages?: Message[]) {
+	/**
+	 * The user's location
+	 */
+	private userLocation: UserLocation | null = null;
+
+	constructor(messages?: Message[], location?: UserLocation) {
 		this.messages = messages || [];
+		if (location) {
+			this.userLocation = location;
+		}
 	}
 
 	shouldStop() {
@@ -55,6 +70,10 @@ export class SystemContext {
 
 	getMessages(): Message[] {
 		return this.messages;
+	}
+
+	getUserLocation(): UserLocation | null {
+		return this.userLocation;
 	}
 
 	/**

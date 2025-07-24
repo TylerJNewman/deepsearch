@@ -2,6 +2,7 @@ import { generateObject } from "ai";
 import { z } from "zod";
 import { model } from "../models";
 import type { SystemContext } from "./system-context";
+import { DEEP_SEARCH_SYSTEM_PROMPT } from "./system-prompt";
 
 export type OurMessageAnnotation = {
   type: "NEW_ACTION";
@@ -36,20 +37,24 @@ export const actionSchema = z.object({
 export type Action = z.infer<typeof actionSchema>;
 
 export const getNextAction = async (
-	context: SystemContext,
+	ctx: SystemContext,
 	opts: { langfuseTraceId?: string } = {},
 ) => {
+	const { langfuseTraceId } = opts;
+	const userLocation = ctx.getUserLocation();
+
 	const result = await generateObject({
 		model,
 		schema: actionSchema,
 		system: `
 <current_context>
 Current date and time: ${new Date().toLocaleString()}
+${userLocation ? `User's location: ${JSON.stringify(userLocation)}` : ""}
 </current_context>
 
-<core_identity>
-You are an intelligent AI decision-maker that determines the next best action in a research workflow. Your role is to analyze the current context and choose whether to search for more information, scrape specific URLs, or provide a final answer.
-</core_identity>
+<system_prompt>
+${DEEP_SEARCH_SYSTEM_PROMPT}
+</system_prompt>
 
 <decision_guidelines>
 - **Analyze information gaps**: Determine what information is missing to answer the user's question
@@ -78,7 +83,7 @@ Provide clear, actionable decisions with specific reasoning. Your response shoul
 </quality_requirements>
 `,
 		prompt: `Message History:
-${context.getMessageHistory()}
+${ctx.getMessageHistory()}
 
 Based on this context, choose the next action:
 1. If you need more information, use 'search' with a relevant query
@@ -92,16 +97,16 @@ Remember:
 
 Here is the search and scrape history:
 
-${context.getQueryHistory()}
+${ctx.getQueryHistory()}
 
-${context.getScrapeHistory()}
+${ctx.getScrapeHistory()}
 `,
-		experimental_telemetry: opts.langfuseTraceId
+		experimental_telemetry: langfuseTraceId
 			? {
 					isEnabled: true,
 					functionId: "get-next-action",
 					metadata: {
-						langfuseTraceId: opts.langfuseTraceId,
+						langfuseTraceId: langfuseTraceId,
 					},
 			  }
 			: undefined,
