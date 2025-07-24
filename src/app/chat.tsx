@@ -91,12 +91,17 @@ export const ChatPage = ({ userName, chatId, isNewChat, initialMessages }: ChatP
     },
   });
 
-  // Handle new chat creation redirect
+  // Handle new chat creation redirect and title updates
   useEffect(() => {
     const lastDataItem = data?.[data.length - 1];
 
     if (lastDataItem && isNewChatCreated(lastDataItem)) {
       router.push(`?id=${lastDataItem.chatId}`);
+    }
+
+    // Handle title updates by refreshing the page to update the sidebar
+    if (lastDataItem && typeof lastDataItem === 'object' && 'type' in lastDataItem && lastDataItem.type === 'TITLE_UPDATED') {
+      router.refresh();
     }
   }, [data, router]);
 

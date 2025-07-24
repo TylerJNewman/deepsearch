@@ -11,7 +11,7 @@ export async function upsertChat({
 }: {
   userId: string;
   chatId: string;
-  title: string;
+  title?: string;
   messages: Array<Message>;
 }) {
   return await db.transaction(async (tx) => {
@@ -33,12 +33,12 @@ export async function upsertChat({
       .values({
         id: chatId,
         userId,
-        title,
+        title: title || "New Chat",
       })
       .onConflictDoUpdate({
         target: chats.id,
         set: {
-          title,
+          ...(title && { title }),
           updatedAt: new Date(),
         },
       })

@@ -11,6 +11,7 @@ import { streamFromDeepSearch } from "~/deep-search";
 import type { OurMessageAnnotation } from "~/deep-search/get-next-action";
 import { upsertChat, getUserTodayRequestCount, recordUserRequest, isUserAdmin } from "~/server/db/queries";
 import { checkRateLimit, recordRateLimit, type RateLimitConfig } from "~/rate-limit";
+import { generateChatTitle } from "~/utils";
 
 const langfuse = new Langfuse({
   environment: env.NODE_ENV,
@@ -163,8 +164,9 @@ export async function POST(request: Request) {
       // Store annotations for the current conversation
       const annotations: OurMessageAnnotation[] = [];
 
-      // Create the chat immediately if it's a new chat (before streaming)
-      // This protects against broken streams, timeouts, or cancellations
+      // Set up title generation for new chats
+      let titlePromise: Promise<string> | undefined;
+
       if (isNewChat) {
         // Send the new chat ID to the frontend
         dataStream.writeData({
@@ -172,25 +174,31 @@ export async function POST(request: Request) {
           chatId: chatId,
         });
 
-        const lastMessage = messages[messages.length - 1];
+        // Start generating the title in parallel
+        titlePromise = generateChatTitle(messages);
+
+        // Create the chat immediately with a placeholder title
         const createChatSpan = trace.span({
           name: "create-initial-chat",
           input: {
             userId: session.user.id,
             chatId: chatId,
             messageCount: messages.length,
-            title: lastMessage?.content?.slice(0, 100) ?? "New Chat",
+            title: "Generating...",
           },
         });
         await upsertChat({
           userId: session.user.id,
           chatId: chatId,
           messages: messages,
-          title: lastMessage?.content?.slice(0, 100) ?? "New Chat",
+          title: "Generating...",
         });
         createChatSpan.end({
           output: { success: true, chatId: chatId },
         });
+      } else {
+        // For existing chats, resolve with empty string
+        titlePromise = Promise.resolve("");
       }
 
       const writeMessageAnnotation = (annotation: OurMessageAnnotation) => {
@@ -223,13 +231,25 @@ export async function POST(request: Request) {
             // Add the assistant message to our messages array
             const updatedMessages = [...messages, assistantMessage];
 
+            // Resolve the title promise if it exists
+            const title = titlePromise ? await titlePromise : "";
+
             // Persist the updated conversation to the database
             await upsertChat({
               userId: session.user.id,
               chatId: chatId,
               messages: updatedMessages,
-              title: messages[0]?.content?.slice(0, 100) ?? "New Chat",
+              ...(title && { title }), // Only save the title if it's not empty
             });
+
+            // Send the title update to the frontend if we have a new title
+            if (title && isNewChat) {
+              dataStream.writeData({
+                type: "TITLE_UPDATED",
+                chatId: chatId,
+                title: title,
+              });
+            }
           } catch (error) {
             console.error("Failed to persist conversation:", error);
           }
