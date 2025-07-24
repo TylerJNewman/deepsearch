@@ -1,19 +1,19 @@
-import { SystemContext } from "./system-context";
-import { generateText } from "ai";
+import type { SystemContext } from "./system-context";
+import { streamText, type StreamTextResult } from "ai";
 import { model } from "../models";
 
 export interface AnswerQuestionOptions {
 	isFinal: boolean;
 }
 
-export const answerQuestion = async (
+export const answerQuestion = (
 	context: SystemContext,
 	options: AnswerQuestionOptions,
-): Promise<string> => {
+): StreamTextResult<Record<string, never>, string> => {
 	const { isFinal } = options;
 	const userQuestion = context.getUserQuestion();
 
-	const result = await generateText({
+	return streamText({
 		model,
 		system: `
 You are an AI research assistant tasked with answering user questions based on comprehensive web research.
@@ -45,6 +45,4 @@ Instructions:
 Answer the user's question based on the research conducted above.
 `,
 	});
-
-	return result.text;
 };

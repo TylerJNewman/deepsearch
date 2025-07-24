@@ -4,7 +4,7 @@ import { getNextAction } from "./get-next-action";
 import { searchTavily } from "../tavily";
 import { scrapePages } from "../scraper";
 import { answerQuestion } from "./answer-question";
-import type { Message } from "ai";
+import type { Message, StreamTextResult } from "ai";
 
 export interface RunAgentLoopOptions {
 	messages: Message[];
@@ -14,7 +14,7 @@ export interface RunAgentLoopOptions {
 
 export const runAgentLoop = async (
 	options: RunAgentLoopOptions,
-): Promise<string> => {
+): Promise<StreamTextResult<Record<string, never>, string>> => {
 	const { messages, maxSteps = 10, langfuseTraceId } = options;
 	
 	// Extract the user's question from the last message
@@ -85,7 +85,7 @@ export const runAgentLoop = async (
 			}
 
 			case "answer": {
-				const answer = await answerQuestion(ctx, { isFinal: false });
+				const answer = answerQuestion(ctx, { isFinal: false });
 				return answer;
 			}
 
@@ -99,6 +99,6 @@ export const runAgentLoop = async (
 	}
 
 	// If we've reached max steps, make a final attempt
-	const finalAnswer = await answerQuestion(ctx, { isFinal: true });
+	const finalAnswer = answerQuestion(ctx, { isFinal: true });
 	return finalAnswer;
 };

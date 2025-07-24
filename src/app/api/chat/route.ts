@@ -189,7 +189,7 @@ export async function POST(request: Request) {
         });
       }
 
-      const result = streamFromDeepSearch({
+      const result = await streamFromDeepSearch({
         messages,
         telemetry: {
           isEnabled: true,
@@ -198,41 +198,9 @@ export async function POST(request: Request) {
             langfuseTraceId: trace.id,
           },
         },
-        onFinish: async ({ response }) => {
-          // Merge the existing messages with the response messages
-          // This handles tool call results and maintains proper message history
-          const updatedMessages = appendResponseMessages({
-            messages,
-            responseMessages: response.messages,
-          });
-
-          const lastUserMessage = messages[messages.length - 1];
-          if (!lastUserMessage) {
-            return;
-          }
-
-          // Save the complete chat history with all messages
-          // This replaces all existing messages with the updated ones
-          const saveChatSpan = trace.span({
-            name: "save-final-chat",
-            input: {
-              userId: session.user.id,
-              chatId: chatId,
-              messageCount: updatedMessages.length,
-              title: lastUserMessage.content?.slice(0, 100) ?? "New Chat",
-            },
-          });
-          await upsertChat({
-            userId: session.user.id,
-            chatId: chatId,
-            messages: updatedMessages,
-            title: lastUserMessage.content?.slice(0, 100) ?? "New Chat",
-          });
-          saveChatSpan.end({
-            output: { success: true, finalMessageCount: updatedMessages.length },
-          });
-
-          // Flush the trace to Langfuse
+        onFinish: async () => {
+          // TODO: Handle persistence when we tackle that later
+          // For now, just flush the trace to Langfuse
           await langfuse.flushAsync();
         },
       });
