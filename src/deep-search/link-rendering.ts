@@ -18,6 +18,7 @@ const linkRendering = `
 - Inline links: \`[text](URL)\`
 - Bare URLs: \`https://example.com\`
 - Reference-style links within paragraphs
+- Combined footnote numbers: \`[^2, 3, 4]\` (WRONG)
 
 ## Examples
 
@@ -26,12 +27,24 @@ const linkRendering = `
 - Visit [OpenAI's website](https://openai.com) to learn more.
 - Check out https://github.com for code repositories.
 - The documentation is available at [this link](https://docs.example.com).
+- Multiple sources show this[^2, 3, 4]. (WRONG - combined numbers)
 
 **✅ CORRECT:**
 
 - OpenAI is an artificial intelligence research company[^1].
 - GitHub is a popular platform for hosting code repositories[^2].
 - The official documentation provides comprehensive guidance[^3].
+- Multiple sources show this[^2][^3][^4]. (CORRECT - separate footnotes)
+
+## Multiple Citations
+
+When citing multiple sources for the same statement, use separate footnote markers:
+
+**❌ WRONG:**
+- Research shows this is true[^2, 3, 4].
+
+**✅ CORRECT:**
+- Research shows this is true[^2][^3][^4].
 
 ## More Examples
 
@@ -78,7 +91,9 @@ const linkRendering = `
 9. **Multiple Sources:**
 
 - ❌ Both [BBC](https://bbc.com) and [CNN](https://cnn.com) covered the story.
+- ❌ Multiple sources reported this[^9, 10]. (WRONG - combined numbers)
 - ✅ Major news outlets including BBC[^9] and CNN[^10] reported on the event.
+- ✅ Multiple sources reported this[^9][^10]. (CORRECT - separate footnotes)
 
 10. **Tool/Software:**
 
@@ -108,6 +123,7 @@ Always place footnote definitions at the end of your response, using this exact 
 [^1]: https://example.com
 [^2]: https://another-example.com/path
 [^3]: https://third-example.org/article
+[^4]: https://fourth-example.net
 \`\`\`
 
 ## Important Notes
@@ -117,6 +133,8 @@ Always place footnote definitions at the end of your response, using this exact 
 - Group all footnote definitions at the end of your response
 - Ensure each footnote number corresponds to exactly one URL
 - Do not include additional text in footnote definitions—only the URL
+- **CRITICAL:** When citing multiple sources, use separate footnote markers: [^2][^3][^4] NOT [^2, 3, 4]
+- Each footnote reference must be clickable and link to its corresponding definition
 
 Follow these formatting rules consistently in all responses that include web links.
 `;
