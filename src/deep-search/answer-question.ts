@@ -1,9 +1,10 @@
 import type { SystemContext } from "./system-context";
-import { streamText, type StreamTextResult } from "ai";
+import { streamText, type StreamTextResult, smoothStream } from "ai";
 import { model } from "../models";
 import tone from "./tone";
 import boldedText from "./bolded.text";
 import linkRendering from "./link-rendering";
+import { markdownJoinerTransform } from "./markdown-joiner";
 
 export interface AnswerQuestionOptions {
 	isFinal: boolean;
@@ -18,6 +19,13 @@ export const answerQuestion = (
 
 	return streamText({
 		model,
+		experimental_transform: [
+			markdownJoinerTransform<Record<string, never>>(),
+			smoothStream({
+				delayInMs: 20,
+				chunking: "line",
+			}),
+		],
 		system: `
 <current_context>
 Current date and time: ${new Date().toLocaleString()}
