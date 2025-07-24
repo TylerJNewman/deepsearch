@@ -12,6 +12,12 @@ import { useRouter } from "next/navigation";
 import type { Message } from "ai";
 import { isNewChatCreated } from "~/utils";
 import { StickToBottom } from "use-stick-to-bottom";
+import type { OurMessageAnnotation } from "~/deep-search/get-next-action";
+
+// Type guard to safely cast annotations
+const isOurMessageAnnotation = (annotation: unknown): annotation is OurMessageAnnotation => {
+  return Boolean(annotation && typeof annotation === 'object' && annotation !== null && 'type' in annotation && annotation.type === 'NEW_ACTION');
+};
 
 interface ChatProps {
   userName: string;
@@ -150,12 +156,16 @@ export const ChatPage = ({ userName, chatId, isNewChat, initialMessages }: ChatP
         >
           <StickToBottom.Content className="flex flex-col gap-4 p-4">
             {messages.map((message, index) => {
+              // Filter and cast annotations to our type
+              const ourAnnotations = message.annotations?.filter(isOurMessageAnnotation) || undefined;
+              
               return (
                 <ChatMessage
                   key={message.id ?? index}
                   parts={message.parts}
                   role={message.role}
                   userName={userName}
+                  annotations={ourAnnotations}
                 />
               );
             })}

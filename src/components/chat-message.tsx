@@ -1,5 +1,7 @@
 import ReactMarkdown, { type Components } from "react-markdown";
 import type { Message } from "ai";
+import { ReasoningSteps } from "./reasoning-steps";
+import type { OurMessageAnnotation } from "~/deep-search/get-next-action";
 
 type MessagePart = NonNullable<Message["parts"]>[number];
 
@@ -7,6 +9,7 @@ interface ChatMessageProps {
   parts: MessagePart[];
   role: string;
   userName: string;
+  annotations?: OurMessageAnnotation[];
 }
 
 const components: Components = {
@@ -77,7 +80,7 @@ const ToolInvocation = ({
   );
 };
 
-export const ChatMessage = ({ parts, role, userName }: ChatMessageProps) => {
+export const ChatMessage = ({ parts, role, userName, annotations }: ChatMessageProps) => {
   const isAI = role === "assistant";
 
   return (
@@ -90,13 +93,18 @@ export const ChatMessage = ({ parts, role, userName }: ChatMessageProps) => {
           {isAI ? "AI" : userName}
         </p>
 
+        {/* Show reasoning steps for AI messages */}
+        {isAI && annotations && annotations.length > 0 && (
+          <ReasoningSteps annotations={annotations} />
+        )}
+
         <div className="prose prose-invert max-w-none">
           {parts.map((part, index) => {
             if (part.type === "text") {
-              return <Markdown key={index}>{part.text}</Markdown>;
+              return <Markdown key={`text-${index}-${part.text.slice(0, 20)}`}>{part.text}</Markdown>;
             }
             if (part.type === "tool-invocation") {
-              return <ToolInvocation key={index} part={part} />;
+              return <ToolInvocation key={`tool-${index}-${part.toolInvocation.toolName}`} part={part} />;
             }
             return null;
           })}

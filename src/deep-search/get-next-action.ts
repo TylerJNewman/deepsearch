@@ -3,6 +3,11 @@ import { z } from "zod";
 import { model } from "../models";
 import type { SystemContext } from "./system-context";
 
+export type OurMessageAnnotation = {
+  type: "NEW_ACTION";
+  action: Action;
+};
+
 export const actionSchema = z.object({
 	title: z
 		.string()

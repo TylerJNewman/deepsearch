@@ -1,5 +1,5 @@
 import { SystemContext } from "./system-context";
-import type { Action } from "./get-next-action";
+import type { Action, OurMessageAnnotation } from "./get-next-action";
 import { getNextAction } from "./get-next-action";
 import { searchTavily } from "../tavily";
 import { scrapePages } from "../scraper";
@@ -10,12 +10,13 @@ export interface RunAgentLoopOptions {
 	messages: Message[];
 	maxSteps?: number;
 	langfuseTraceId?: string;
+	writeMessageAnnotation?: (annotation: OurMessageAnnotation) => void;
 }
 
 export const runAgentLoop = async (
 	options: RunAgentLoopOptions,
 ): Promise<StreamTextResult<Record<string, never>, string>> => {
-	const { messages, maxSteps = 10, langfuseTraceId } = options;
+	const { messages, maxSteps = 10, langfuseTraceId, writeMessageAnnotation } = options;
 	
 	// Extract the user's question from the last message
 	const lastMessage = messages[messages.length - 1];
@@ -26,6 +27,14 @@ export const runAgentLoop = async (
 
 	while (!ctx.shouldStop() && ctx.getCurrentStep() < maxSteps) {
 		const nextAction = await getNextAction(ctx, { langfuseTraceId });
+
+		// Send annotation about the chosen action
+		if (writeMessageAnnotation) {
+			writeMessageAnnotation({
+				type: "NEW_ACTION",
+				action: nextAction,
+			} satisfies OurMessageAnnotation);
+		}
 
 		switch (nextAction.type) {
 			case "search": {

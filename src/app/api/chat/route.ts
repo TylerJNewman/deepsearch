@@ -198,6 +198,9 @@ export async function POST(request: Request) {
             langfuseTraceId: trace.id,
           },
         },
+        writeMessageAnnotation: (annotation) => {
+          dataStream.writeMessageAnnotation(annotation);
+        },
         onFinish: async () => {
           // TODO: Handle persistence when we tackle that later
           // For now, just flush the trace to Langfuse

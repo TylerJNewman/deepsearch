@@ -11,11 +11,13 @@ import { scrapePages } from "../scraper";
 import { DEEP_SEARCH_SYSTEM_PROMPT } from "./system-prompt";
 import { env } from "~/env";
 import { runAgentLoop } from "./run-agent-loop";
+import type { OurMessageAnnotation } from "./get-next-action";
 
 export const streamFromDeepSearch = async (opts: {
 	messages: Message[];
 	onFinish: Parameters<typeof streamText>[0]["onFinish"];
 	telemetry: TelemetrySettings;
+	writeMessageAnnotation?: (annotation: OurMessageAnnotation) => void;
 }): Promise<StreamTextResult<Record<string, never>, string>> => {
 	return runAgentLoop({
 		messages: opts.messages,
@@ -23,6 +25,7 @@ export const streamFromDeepSearch = async (opts: {
 		langfuseTraceId: typeof opts.telemetry.metadata?.langfuseTraceId === 'string' 
 			? opts.telemetry.metadata.langfuseTraceId 
 			: undefined,
+		writeMessageAnnotation: opts.writeMessageAnnotation,
 	});
 };
 
