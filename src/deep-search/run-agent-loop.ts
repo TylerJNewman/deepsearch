@@ -18,12 +18,8 @@ export const runAgentLoop = async (
 ): Promise<StreamTextResult<Record<string, never>, string>> => {
 	const { messages, maxSteps = 10, langfuseTraceId, writeMessageAnnotation } = options;
 	
-	// Extract the user's question from the last message
-	const lastMessage = messages[messages.length - 1];
-	const userQuestion = lastMessage?.content || "No question provided";
-	
-	// Create context with the user's question
-	const ctx = new SystemContext(userQuestion);
+	// Create context with the full conversation history
+	const ctx = new SystemContext(messages);
 
 	while (!ctx.shouldStop() && ctx.getCurrentStep() < maxSteps) {
 		const nextAction = await getNextAction(ctx, { langfuseTraceId });

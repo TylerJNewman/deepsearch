@@ -1,3 +1,5 @@
+import type { Message } from "ai";
+
 type QueryResultSearchResult = {
 	date: string;
 	title: string;
@@ -25,9 +27,9 @@ export class SystemContext {
 	private step = 0;
 
 	/**
-	 * The user's question
+	 * The full conversation history
 	 */
-	private userQuestion: string = "";
+	private messages: Message[] = [];
 
 	/**
 	 * The history of all queries searched
@@ -39,24 +41,52 @@ export class SystemContext {
 	 */
 	private scrapeHistory: ScrapeResult[] = [];
 
-	constructor(userQuestion?: string) {
-		this.userQuestion = userQuestion || "";
+	constructor(messages?: Message[]) {
+		this.messages = messages || [];
 	}
 
 	shouldStop() {
 		return this.step >= 10;
 	}
 
-	setUserQuestion(question: string) {
-		this.userQuestion = question;
+	setMessages(messages: Message[]) {
+		this.messages = messages;
 	}
 
+	getMessages(): Message[] {
+		return this.messages;
+	}
+
+	/**
+	 * Get the last user message as a simple question for backwards compatibility
+	 */
 	getUserQuestion(): string {
-		return this.userQuestion;
+		const lastMessage = this.messages[this.messages.length - 1];
+		return lastMessage?.content || "No question provided";
 	}
 
+	/**
+	 * Get the full conversation history formatted for the AI
+	 */
 	getMessageHistory(): string {
-		return this.userQuestion ? `User Question: ${this.userQuestion}` : "No question provided";
+		if (this.messages.length === 0) {
+			return "No conversation history available";
+		}
+
+		if (this.messages.length === 1) {
+			// For single messages, just return the question for backwards compatibility
+			return `User Question: ${this.messages[0]?.content || "No question provided"}`;
+		}
+
+		// For multiple messages, format the full conversation
+		const conversationHistory = this.messages
+			.map((message, index) => {
+				const role = message.role === 'user' ? 'User' : 'Assistant';
+				return `${role}: ${message.content}`;
+			})
+			.join('\n\n');
+
+		return `Conversation History:\n${conversationHistory}`;
 	}
 
 	reportQueries(queries: QueryResult[]) {
