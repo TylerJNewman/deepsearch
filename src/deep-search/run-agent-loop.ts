@@ -1,4 +1,4 @@
-import type { SystemContext } from "./system-context";
+import { SystemContext } from "./system-context";
 import type { Action } from "./get-next-action";
 import { getNextAction } from "./get-next-action";
 import { searchTavily } from "../tavily";
@@ -9,16 +9,23 @@ import type { Message } from "ai";
 export interface RunAgentLoopOptions {
 	messages: Message[];
 	maxSteps?: number;
+	langfuseTraceId?: string;
 }
 
 export const runAgentLoop = async (
 	options: RunAgentLoopOptions,
 ): Promise<string> => {
-	const { messages, maxSteps = 10 } = options;
-	const ctx = new SystemContext();
+	const { messages, maxSteps = 10, langfuseTraceId } = options;
+	
+	// Extract the user's question from the last message
+	const lastMessage = messages[messages.length - 1];
+	const userQuestion = lastMessage?.content || "No question provided";
+	
+	// Create context with the user's question
+	const ctx = new SystemContext(userQuestion);
 
 	while (!ctx.shouldStop() && ctx.getCurrentStep() < maxSteps) {
-		const nextAction = await getNextAction(ctx);
+		const nextAction = await getNextAction(ctx, { langfuseTraceId });
 
 		switch (nextAction.type) {
 			case "search": {
@@ -82,8 +89,10 @@ export const runAgentLoop = async (
 				return answer;
 			}
 
-			default:
-				throw new Error(`Unknown action type: ${nextAction.type}`);
+			default: {
+				// This should never happen due to exhaustive type checking
+				throw new Error(`Unknown action type: ${(nextAction as Action).type}`);
+			}
 		}
 
 		ctx.incrementStep();

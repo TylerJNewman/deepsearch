@@ -1,27 +1,15 @@
 import { generateObject } from "ai";
 import { z } from "zod";
 import { model } from "../models";
-import type { SystemContext } from "./system-context";
+import { SystemContext } from "./system-context";
 
-// Action types
-export interface SearchAction {
-	type: "search";
-	query: string;
-}
-
-export interface ScrapeAction {
-	type: "scrape";
-	urls: string[];
-}
-
-export interface AnswerAction {
-	type: "answer";
-}
-
-export type Action = SearchAction | ScrapeAction | AnswerAction;
-
-// Zod schema for structured outputs
 export const actionSchema = z.object({
+	title: z
+		.string()
+		.describe(
+			"The title of the action, to be displayed in the UI. Be extremely concise. 'Searching Saka's injury history', 'Checking HMRC industrial action', 'Comparing toaster ovens'",
+		),
+	reasoning: z.string().describe("The reason you chose this step."),
 	type: z
 		.enum(["search", "scrape", "answer"])
 		.describe(
@@ -32,48 +20,55 @@ export const actionSchema = z.object({
 		),
 	query: z
 		.string()
-		.describe(
-			"The query to search for. Required if type is 'search'.",
-		)
+		.describe("The query to search for. Only required if type is 'search'.")
 		.optional(),
 	urls: z
 		.array(z.string())
-		.describe(
-			"The URLs to scrape. Required if type is 'scrape'.",
-		)
+		.describe("The URLs to scrape. Only required if type is 'scrape'.")
 		.optional(),
 });
 
+export type Action = z.infer<typeof actionSchema>;
+
 export const getNextAction = async (
 	context: SystemContext,
+	opts: { langfuseTraceId?: string } = {},
 ) => {
 	const result = await generateObject({
 		model,
 		schema: actionSchema,
-		prompt: `
-You are an AI research assistant that must decide the next action to take based on the current research context.
+		system: `
+    You are a helpful AI assistant that can search the web, scrape URLs, or answer questions. Your goal is to determine the next best action to take based on the current context.
+    `,
+		prompt: `Message History:
+${context.getMessageHistory()}
 
-Your goal is to determine whether you need to:
-1. Search the web for more information
-2. Scrape specific URLs for detailed content
-3. Answer the user's question and complete the research loop
+Based on this context, choose the next action:
+1. If you need more information, use 'search' with a relevant query
+2. If you have URLs that need to be scraped, use 'scrape' with those URLs
+3. If you have enough information to answer the question, use 'answer'
 
-Current step: ${context.getCurrentStep()}
+Remember:
+- Only use 'search' if you need more information
+- Only use 'scrape' if you have URLs that need to be scraped
+- Use 'answer' when you have enough information to provide a complete answer
 
-Query history:
+Here is the search and scrape history:
+
 ${context.getQueryHistory()}
 
-Scrape history:
 ${context.getScrapeHistory()}
-
-Decision criteria:
-- Choose "search" if you need more information or haven't found sufficient sources
-- Choose "scrape" if you have URLs from previous searches that need detailed content
-- Choose "answer" only when you have enough information to fully address the user's question
-
-Remember: You have a maximum of 10 steps. Be strategic about when to answer vs. continuing research.
-		`,
+`,
+		experimental_telemetry: opts.langfuseTraceId
+			? {
+					isEnabled: true,
+					functionId: "get-next-action",
+					metadata: {
+						langfuseTraceId: opts.langfuseTraceId,
+					},
+			  }
+			: undefined,
 	});
 
-	return result.object as Action;
+	return result.object;
 };

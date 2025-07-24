@@ -1,4 +1,4 @@
-import type { SystemContext } from "./system-context";
+import { SystemContext } from "./system-context";
 import { generateText } from "ai";
 import { model } from "../models";
 
@@ -11,11 +11,24 @@ export const answerQuestion = async (
 	options: AnswerQuestionOptions,
 ): Promise<string> => {
 	const { isFinal } = options;
+	const userQuestion = context.getUserQuestion();
 
-	const prompt = `
-You are an AI research assistant tasked with answering the user's question based on the research you've conducted.
+	const result = await generateText({
+		model,
+		system: `
+You are an AI research assistant tasked with answering user questions based on comprehensive web research.
+
+Your role is to:
+1. Provide accurate, well-researched answers
+2. Include proper citations and sources
+3. Acknowledge limitations or missing information
+4. Use clear, structured formatting
+5. Be concise yet comprehensive
 
 ${isFinal ? "⚠️ FINAL ATTEMPT: You may not have all the information needed, but please provide the best possible answer based on what you've found." : ""}
+`,
+		prompt: `
+User's Question: ${userQuestion}
 
 Research Context:
 ${context.getQueryHistory()}
@@ -30,11 +43,7 @@ Instructions:
 5. Use markdown formatting for clarity
 
 Answer the user's question based on the research conducted above.
-`;
-
-	const result = await generateText({
-		model,
-		prompt,
+`,
 	});
 
 	return result.text;

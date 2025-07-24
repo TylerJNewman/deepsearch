@@ -25,6 +25,11 @@ export class SystemContext {
 	private step = 0;
 
 	/**
+	 * The user's question
+	 */
+	private userQuestion: string = "";
+
+	/**
 	 * The history of all queries searched
 	 */
 	private queryHistory: QueryResult[] = [];
@@ -34,8 +39,24 @@ export class SystemContext {
 	 */
 	private scrapeHistory: ScrapeResult[] = [];
 
+	constructor(userQuestion?: string) {
+		this.userQuestion = userQuestion || "";
+	}
+
 	shouldStop() {
 		return this.step >= 10;
+	}
+
+	setUserQuestion(question: string) {
+		this.userQuestion = question;
+	}
+
+	getUserQuestion(): string {
+		return this.userQuestion;
+	}
+
+	getMessageHistory(): string {
+		return this.userQuestion ? `User Question: ${this.userQuestion}` : "No question provided";
 	}
 
 	reportQueries(queries: QueryResult[]) {
