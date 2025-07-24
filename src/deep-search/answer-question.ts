@@ -8,13 +8,14 @@ import { markdownJoinerTransform } from "./markdown-joiner";
 
 export interface AnswerQuestionOptions {
 	isFinal: boolean;
+	langfuseTraceId?: string;
 }
 
 export const answerQuestion = (
 	context: SystemContext,
 	options: AnswerQuestionOptions,
 ): StreamTextResult<Record<string, never>, string> => {
-	const { isFinal } = options;
+	const { isFinal, langfuseTraceId } = options;
 	const userQuestion = context.getUserQuestion();
 
 	return streamText({
@@ -120,5 +121,14 @@ Instructions:
 
 Answer the user's question based on the research conducted above.
 `,
+		experimental_telemetry: langfuseTraceId
+			? {
+					isEnabled: true,
+					functionId: "answer-question",
+					metadata: {
+						langfuseTraceId: langfuseTraceId,
+					},
+			  }
+			: undefined,
 	});
 };

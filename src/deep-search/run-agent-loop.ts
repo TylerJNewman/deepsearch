@@ -94,7 +94,7 @@ export const runAgentLoop = async (
 			}
 
 			case "answer": {
-				const answer = answerQuestion(ctx, { isFinal: false });
+				const answer = answerQuestion(ctx, { isFinal: false, langfuseTraceId });
 				return answer;
 			}
 
@@ -108,6 +108,6 @@ export const runAgentLoop = async (
 	}
 
 	// If we've reached max steps, make a final attempt
-	const finalAnswer = answerQuestion(ctx, { isFinal: true });
+	const finalAnswer = answerQuestion(ctx, { isFinal: true, langfuseTraceId });
 	return finalAnswer;
 };
