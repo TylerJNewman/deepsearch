@@ -3,6 +3,7 @@ import type { Action, OurMessageAnnotation } from "./get-next-action";
 import { getNextAction } from "./get-next-action";
 import { searchTavily } from "../tavily";
 import { scrapePages } from "../scraper";
+import { summarizeURL } from "./summarize-url";
 import { answerQuestion } from "./answer-question";
 import type { Message, StreamTextResult, LanguageModelUsage } from "ai";
 
@@ -49,7 +50,7 @@ export const runAgentLoop = async (
 				const searchResult = await searchTavily(
 					{
 						query: nextAction.query,
-						maxResults: 3, // Reduced from 10 to 3
+						maxResults: 10, // Back to 10 since we now have summarization
 						searchDepth: "advanced",
 						includeAnswer: true,
 					},
@@ -65,20 +66,57 @@ export const runAgentLoop = async (
 					maxRetries: 3,
 				});
 
-				// Combine search results with scraped content
-				const combinedResults = searchResult.results.map((result, index) => {
+				// Summarize all the scraped content in parallel
+				const summarizationPromises = searchResult.results.map(async (result, index) => {
 					const scrapedContent = scrapeResult.success 
 						? scrapeResult.results[index]?.result.data || "Failed to scrape content"
 						: "Failed to scrape content";
-					
-					return {
-						date: result.publishedDate || "Unknown",
-						title: result.title,
-						url: result.url,
-						snippet: result.content,
-						scrapedContent: scrapedContent,
-					};
+
+					// Skip summarization if scraping failed
+					if (scrapedContent === "Failed to scrape content") {
+						return {
+							date: result.publishedDate,
+							title: result.title,
+							url: result.url,
+							snippet: result.content,
+							summary: "Failed to scrape content - no summary available",
+						};
+					}
+
+					try {
+						const summary = await summarizeURL({
+							conversationHistory: ctx.getMessages(),
+							scrapedContent,
+							searchMetadata: {
+								date: result.publishedDate,
+								title: result.title,
+								url: result.url,
+								snippet: result.content,
+							},
+							query: nextAction.query as string,
+							langfuseTraceId,
+						});
+
+						return {
+							date: result.publishedDate,
+							title: result.title,
+							url: result.url,
+							snippet: result.content,
+							summary,
+						};
+					} catch (error) {
+						console.error(`Failed to summarize ${result.url}:`, error);
+						return {
+							date: result.publishedDate,
+							title: result.title,
+							url: result.url,
+							snippet: result.content,
+							summary: `Failed to summarize content: ${error instanceof Error ? error.message : "Unknown error"}`,
+						};
+					}
 				});
+
+				const combinedResults = await Promise.all(summarizationPromises);
 
 				const searchEntry = {
 					query: nextAction.query,

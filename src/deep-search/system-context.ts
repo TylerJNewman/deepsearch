@@ -1,11 +1,11 @@
 import type { Message } from "ai";
 
 type SearchResult = {
-	date: string;
+	date?: string;
 	title: string;
 	url: string;
 	snippet: string;
-	scrapedContent: string;
+	summary: string;
 };
 
 type SearchHistoryEntry = {
@@ -32,7 +32,7 @@ export class SystemContext {
 	private messages: Message[] = [];
 
 	/**
-	 * The history of all searches with their scraped content
+	 * The history of all searches with their summarized content
 	 */
 	private searchHistory: SearchHistoryEntry[] = [];
 
@@ -107,12 +107,12 @@ export class SystemContext {
 					`## Query: "${search.query}"`,
 					...search.results.map((result) =>
 						[
-							`### ${result.date} - ${result.title}`,
+							`### ${result.date || "Unknown"} - ${result.title}`,
 							result.url,
 							result.snippet,
-							"<scrape_result>",
-							result.scrapedContent,
-							"</scrape_result>",
+							"<summary>",
+							result.summary,
+							"</summary>",
 						].join("\n\n"),
 					),
 				].join("\n\n"),
