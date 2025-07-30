@@ -117,12 +117,25 @@ export const runAgentLoop = async (
 						};
 					} catch (error) {
 						console.error(`Failed to summarize ${result.url}:`, error);
+						
+						// Handle Redis key size errors specifically
+						const errorMessage = error instanceof Error ? error.message : "Unknown error";
+						if (errorMessage.includes("max key size exceeded")) {
+							return {
+								date: result.publishedDate,
+								title: result.title,
+								url: result.url,
+								snippet: result.content,
+								summary: "Content too large to summarize - please try a different source",
+							};
+						}
+						
 						return {
 							date: result.publishedDate,
 							title: result.title,
 							url: result.url,
 							snippet: result.content,
-							summary: `Failed to summarize content: ${error instanceof Error ? error.message : "Unknown error"}`,
+							summary: `Failed to summarize content: ${errorMessage}`,
 						};
 					}
 				});

@@ -91,7 +91,15 @@ const extractArticleText = (html: string): string => {
     );
   }
 
-  return content.trim();
+  const trimmedContent = content.trim();
+  
+  // Limit content size to avoid Redis key size issues (30KB limit to be safe)
+  const MAX_CONTENT_SIZE = 30 * 1024; // 30KB
+  if (trimmedContent.length > MAX_CONTENT_SIZE) {
+    return `${trimmedContent.substring(0, MAX_CONTENT_SIZE)}\n\n[Content truncated due to size limit]`;
+  }
+  
+  return trimmedContent;
 };
 
 const checkRobotsTxt = async (
