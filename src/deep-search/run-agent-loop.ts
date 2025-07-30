@@ -66,10 +66,21 @@ export const runAgentLoop = async (
 					maxRetries: 3,
 				});
 
+				// Debug: Log scraping results
+				console.log(`Scraping ${urls.length} URLs:`, {
+					success: scrapeResult.success,
+					successfulScrapes: scrapeResult.results.filter(r => r.result.success).length,
+					failedScrapes: scrapeResult.results.filter(r => !r.result.success).length,
+					errors: scrapeResult.results
+						.filter(r => !r.result.success)
+						.map(r => `${r.url}: ${'error' in r.result ? r.result.error : 'Unknown error'}`)
+				});
+
 				// Summarize all the scraped content in parallel
 				const summarizationPromises = searchResult.results.map(async (result, index) => {
-					const scrapedContent = scrapeResult.success 
-						? scrapeResult.results[index]?.result.data || "Failed to scrape content"
+					const scrapeResultItem = scrapeResult.results[index];
+					const scrapedContent = scrapeResult.success && scrapeResultItem?.result.success
+						? scrapeResultItem.result.data
 						: "Failed to scrape content";
 
 					// Skip summarization if scraping failed
