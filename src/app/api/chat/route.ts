@@ -15,6 +15,9 @@ import { generateChatTitle } from "~/utils";
 import { geolocation } from "@vercel/functions";
 
 const langfuse = new Langfuse({
+  secretKey: env.LANGFUSE_SECRET_KEY,
+  publicKey: env.LANGFUSE_PUBLIC_KEY,
+  baseUrl: env.LANGFUSE_BASEURL,
   environment: env.NODE_ENV,
 });
 
