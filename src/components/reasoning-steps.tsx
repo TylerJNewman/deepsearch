@@ -54,12 +54,18 @@ export const ReasoningSteps = ({
                         {annotation.action.reasoning}
                       </Markdown>
                     </div>
-                    {annotation.action.type ===
-                      "search" && (
+                    {annotation.action.type === "continue" && (
                       <div className="mt-2 flex items-center gap-2 text-sm text-gray-400">
                         <Search className="size-4" />
                         <span>
-                          {annotation.action.query}
+                          Planning research phase
+                        </span>
+                      </div>
+                    )}
+                    {annotation.action.type === "answer" && (
+                      <div className="mt-2 flex items-center gap-2 text-sm text-gray-400">
+                        <span>
+                          Preparing final answer
                         </span>
                       </div>
                     )}
