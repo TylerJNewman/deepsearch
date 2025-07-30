@@ -45,54 +45,47 @@ export const runAgentLoop = async (
 					throw new Error("Search action requires a query");
 				}
 
+				// Search for information
 				const searchResult = await searchTavily(
 					{
 						query: nextAction.query,
-						maxResults: 10,
+						maxResults: 3, // Reduced from 10 to 3
 						searchDepth: "advanced",
 						includeAnswer: true,
 					},
 					undefined,
 				);
 
-				const queryResult = {
-					query: nextAction.query,
-					results: searchResult.results.map((result) => ({
+				// Extract URLs from search results
+				const urls = searchResult.results.map((result) => result.url);
+
+				// Scrape all the URLs
+				const scrapeResult = await scrapePages({
+					urls: urls,
+					maxRetries: 3,
+				});
+
+				// Combine search results with scraped content
+				const combinedResults = searchResult.results.map((result, index) => {
+					const scrapedContent = scrapeResult.success 
+						? scrapeResult.results[index]?.result.data || "Failed to scrape content"
+						: "Failed to scrape content";
+					
+					return {
 						date: result.publishedDate || "Unknown",
 						title: result.title,
 						url: result.url,
 						snippet: result.content,
-					})),
-				};
-
-				ctx.reportQueries([queryResult]);
-				break;
-			}
-
-			case "scrape": {
-				if (!nextAction.urls || nextAction.urls.length === 0) {
-					throw new Error("Scrape action requires URLs");
-				}
-
-				const scrapeResult = await scrapePages({
-					urls: nextAction.urls,
-					maxRetries: 3,
+						scrapedContent: scrapedContent,
+					};
 				});
 
-				if (scrapeResult.success) {
-					const scrapes = scrapeResult.results.map((result) => ({
-						url: result.url,
-						result: result.result.data,
-					}));
-					ctx.reportScrapes(scrapes);
-				} else {
-					// Handle failed scrapes gracefully
-					const scrapes = nextAction.urls.map((url) => ({
-						url,
-						result: `Failed to scrape: ${scrapeResult.error}`,
-					}));
-					ctx.reportScrapes(scrapes);
-				}
+				const searchEntry = {
+					query: nextAction.query,
+					results: combinedResults,
+				};
+
+				ctx.reportSearch(searchEntry);
 				break;
 			}
 

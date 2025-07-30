@@ -8,7 +8,6 @@ import type { streamText } from "ai";
 import { z } from "zod";
 import { model } from "../models";
 import { searchTavily, type TavilyTool } from "../tavily";
-import { scrapePages } from "../scraper";
 import { DEEP_SEARCH_SYSTEM_PROMPT } from "./system-prompt";
 import { env } from "~/env";
 import { runAgentLoop } from "./run-agent-loop";

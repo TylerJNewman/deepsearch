@@ -1,20 +1,16 @@
 import type { Message } from "ai";
 
-type QueryResultSearchResult = {
+type SearchResult = {
 	date: string;
 	title: string;
 	url: string;
 	snippet: string;
+	scrapedContent: string;
 };
 
-type QueryResult = {
+type SearchHistoryEntry = {
 	query: string;
-	results: QueryResultSearchResult[];
-};
-
-type ScrapeResult = {
-	url: string;
-	result: string;
+	results: SearchResult[];
 };
 
 type UserLocation = {
@@ -23,9 +19,6 @@ type UserLocation = {
 	city?: string;
 	country?: string;
 };
-
-const toQueryResult = (query: QueryResultSearchResult) =>
-	[`### ${query.date} - ${query.title}`, query.url, query.snippet].join("\n\n");
 
 export class SystemContext {
 	/**
@@ -39,14 +32,9 @@ export class SystemContext {
 	private messages: Message[] = [];
 
 	/**
-	 * The history of all queries searched
+	 * The history of all searches with their scraped content
 	 */
-	private queryHistory: QueryResult[] = [];
-
-	/**
-	 * The history of all URLs scraped
-	 */
-	private scrapeHistory: ScrapeResult[] = [];
+	private searchHistory: SearchHistoryEntry[] = [];
 
 	/**
 	 * The user's location
@@ -108,33 +96,25 @@ export class SystemContext {
 		return `Conversation History:\n${conversationHistory}`;
 	}
 
-	reportQueries(queries: QueryResult[]) {
-		this.queryHistory.push(...queries);
+	reportSearch(search: SearchHistoryEntry) {
+		this.searchHistory.push(search);
 	}
 
-	reportScrapes(scrapes: ScrapeResult[]) {
-		this.scrapeHistory.push(...scrapes);
-	}
-
-	getQueryHistory(): string {
-		return this.queryHistory
-			.map((query) =>
+	getSearchHistory(): string {
+		return this.searchHistory
+			.map((search) =>
 				[
-					`## Query: "${query.query}"`,
-					...query.results.map(toQueryResult),
-				].join("\n\n"),
-			)
-			.join("\n\n");
-	}
-
-	getScrapeHistory(): string {
-		return this.scrapeHistory
-			.map((scrape) =>
-				[
-					`## Scrape: "${scrape.url}"`,
-					"<scrape_result>",
-					scrape.result,
-					"</scrape_result>",
+					`## Query: "${search.query}"`,
+					...search.results.map((result) =>
+						[
+							`### ${result.date} - ${result.title}`,
+							result.url,
+							result.snippet,
+							"<scrape_result>",
+							result.scrapedContent,
+							"</scrape_result>",
+						].join("\n\n"),
+					),
 				].join("\n\n"),
 			)
 			.join("\n\n");
@@ -155,16 +135,9 @@ export class SystemContext {
 	}
 
 	/**
-	 * Get all query history as an array
+	 * Get all search history as an array
 	 */
-	getQueryHistoryArray(): QueryResult[] {
-		return [...this.queryHistory];
-	}
-
-	/**
-	 * Get all scrape history as an array
-	 */
-	getScrapeHistoryArray(): ScrapeResult[] {
-		return [...this.scrapeHistory];
+	getSearchHistoryArray(): SearchHistoryEntry[] {
+		return [...this.searchHistory];
 	}
 }

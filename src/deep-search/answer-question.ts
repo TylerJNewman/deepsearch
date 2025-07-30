@@ -117,9 +117,7 @@ ${isFinal ? "⚠️ FINAL ATTEMPT: You may not have all the information needed, 
 ${messageHistory}
 
 Research Context:
-${context.getQueryHistory()}
-
-${context.getScrapeHistory()}
+${context.getSearchHistory()}
 
 Instructions:
 1. Provide a comprehensive answer based on the conversation context above
