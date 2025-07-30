@@ -79,7 +79,7 @@ export const runAgentLoop = async (
 				// Summarize all the scraped content in parallel
 				const summarizationPromises = searchResult.results.map(async (result, index) => {
 					const scrapeResultItem = scrapeResult.results[index];
-					const scrapedContent = scrapeResult.success && scrapeResultItem?.result.success
+					const scrapedContent = scrapeResultItem?.result.success
 						? scrapeResultItem.result.data
 						: "Failed to scrape content";
 
