@@ -85,7 +85,7 @@ export const runAgentLoop = async (
 
 					try {
 						const summary = await summarizeURL({
-							conversationHistory: ctx.getMessages(),
+							conversationHistory: ctx.getMessageHistory(false),
 							scrapedContent,
 							searchMetadata: {
 								date: result.publishedDate,

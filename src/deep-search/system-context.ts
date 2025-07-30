@@ -56,10 +56,6 @@ export class SystemContext {
 		this.messages = messages;
 	}
 
-	getMessages(): Message[] {
-		return this.messages;
-	}
-
 	getUserLocation(): UserLocation | null {
 		return this.userLocation;
 	}
@@ -74,15 +70,17 @@ export class SystemContext {
 
 	/**
 	 * Get the full conversation history formatted for the AI
+	 * @param includeLabels Whether to include labels like "Conversation History:" and "User Question:"
 	 */
-	getMessageHistory(): string {
+	getMessageHistory(includeLabels = true): string {
 		if (this.messages.length === 0) {
-			return "No conversation history available";
+			return includeLabels ? "No conversation history available" : "";
 		}
 
 		if (this.messages.length === 1) {
 			// For single messages, just return the question for backwards compatibility
-			return `User Question: ${this.messages[0]?.content || "No question provided"}`;
+			const content = this.messages[0]?.content || "No question provided";
+			return includeLabels ? `User Question: ${content}` : content;
 		}
 
 		// For multiple messages, format the full conversation
@@ -93,7 +91,7 @@ export class SystemContext {
 			})
 			.join('\n\n');
 
-		return `Conversation History:\n${conversationHistory}`;
+		return includeLabels ? `Conversation History:\n${conversationHistory}` : conversationHistory;
 	}
 
 	reportSearch(search: SearchHistoryEntry) {

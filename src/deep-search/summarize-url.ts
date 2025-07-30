@@ -1,10 +1,9 @@
 import { generateText } from "ai";
 import { summarizationModel } from "../models";
 import { cacheWithRedis } from "~/server/redis/redis";
-import type { Message } from "ai";
 
 export interface SummarizeURLOptions {
-	conversationHistory: Message[];
+	conversationHistory: string;
 	scrapedContent: string;
 	searchMetadata: {
 		date?: string;
@@ -35,10 +34,8 @@ Critical Reminder: If content lacks a specific aspect of the research topic, cle
 const summarizeURLWithAI = async (options: SummarizeURLOptions): Promise<string> => {
 	const { conversationHistory, scrapedContent, searchMetadata, query, langfuseTraceId } = options;
 
-	// Format conversation history for context
-	const conversationContext = conversationHistory
-		.map((message) => `${message.role === 'user' ? 'User' : 'Assistant'}: ${message.content}`)
-		.join('\n\n');
+	// Conversation history is already formatted
+	const conversationContext = conversationHistory;
 
 	const result = await generateText({
 		model: summarizationModel,
