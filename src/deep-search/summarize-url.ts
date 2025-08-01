@@ -1,6 +1,6 @@
 import { generateText } from "ai";
 import { summarizationModel } from "../models";
-import { cacheWithRedis } from "~/server/redis/redis";
+import { cacheWithRedis, createStableHash } from "~/server/redis/redis";
 
 export interface SummarizeURLOptions {
 	conversationHistory: string;
@@ -37,6 +37,8 @@ const summarizeURLWithAI = async (options: SummarizeURLOptions): Promise<string>
 	// Conversation history is already formatted
 	const conversationContext = conversationHistory;
 
+	console.log(`🔍 Summarizing URL: ${searchMetadata.url} for query: "${query}"`);
+
 	const result = await generateText({
 		model: summarizationModel,
 		prompt: `${SUMMARIZATION_PROMPT}
@@ -64,6 +66,7 @@ Please provide a comprehensive synthesis of the above content in relation to the
 						langfuseTraceId: langfuseTraceId,
 						url: searchMetadata.url,
 						query: query,
+						cacheKeyType: "url-query-hash",
 					},
 			  }
 			: undefined,
@@ -72,7 +75,7 @@ Please provide a comprehensive synthesis of the above content in relation to the
 	return result.text;
 };
 
-// Cached version of the summarize function
+// Cached version of the summarize function with optimized cache keys
 export const summarizeURL = cacheWithRedis(
 	"summarizeURL",
 	summarizeURLWithAI,
@@ -86,6 +89,21 @@ export const summarizeURL = cacheWithRedis(
 			// We could add logic here to skip cache for certain conditions
 			// For now, always cache
 			return false;
+		},
+		// NEW: Custom cache key generator that excludes conversation history
+		generateCacheKey: (options: SummarizeURLOptions) => {
+			// Create cache key based on URL + query + content hash (NOT conversation history)
+			const keyData = {
+				url: options.searchMetadata.url,
+				query: options.query,
+				// Include a hash of the scraped content to handle content updates
+				contentHash: createStableHash(options.scrapedContent.substring(0, 1000)), // First 1KB for fingerprint
+				title: options.searchMetadata.title,
+			};
+			
+			const cacheKey = createStableHash(JSON.stringify(keyData));
+			console.log(`🔑 Summary cache key generated: ${cacheKey} (URL: ${options.searchMetadata.url.substring(0, 50)}...)`);
+			return cacheKey;
 		},
 	}
 ); 
