@@ -2,6 +2,7 @@ import { generateObject } from "ai";
 import { z } from "zod";
 import { model } from "../models";
 import type { SystemContext } from "./system-context";
+import { cacheWithRedis, createStableHash } from "~/server/redis/redis";
 
 export const queryPlanSchema = z.object({
 	plan: z
@@ -20,12 +21,14 @@ export const queryPlanSchema = z.object({
 
 export type QueryPlan = z.infer<typeof queryPlanSchema>;
 
-export const queryRewriter = async (
+const queryRewriterImpl = async (
 	ctx: SystemContext,
 	opts: { langfuseTraceId?: string } = {},
 ): Promise<QueryPlan> => {
 	const { langfuseTraceId } = opts;
 	const userLocation = ctx.getUserLocation();
+
+	console.log(`🧠 Generating query plan for: "${ctx.getUserQuestion()}"`);
 
 	const result = await generateObject({
 		model,
@@ -69,10 +72,55 @@ Based on the current conversation and search history, create a research plan and
 					functionId: "query-rewriter",
 					metadata: {
 						langfuseTraceId: langfuseTraceId,
+						cacheKeyType: "question-hash",
 					},
 			  }
 			: undefined,
 	});
 
 	return result.object;
-}; 
+};
+
+// Cached version of the query rewriter with optimized cache keys
+export const queryRewriter = cacheWithRedis(
+	"queryPlan",
+	queryRewriterImpl,
+	{
+		getDuration: () => {
+			// Query plans can be cached for 4 hours since they're based on question semantics
+			// not time-sensitive information
+			return 60 * 60 * 4; // 4 hours
+		},
+		shouldSkipCache: () => {
+			// Always cache query plans unless we add a forceRefresh mechanism later
+			return false;
+		},
+		// Custom cache key generator that focuses on the core question
+		generateCacheKey: (ctx: SystemContext, opts: { langfuseTraceId?: string } = {}) => {
+			// Get the user's question (last message content)
+			const question = ctx.getUserQuestion();
+			
+			// Create a normalized version of the question for better cache hits
+			const normalizedQuestion = question
+				.toLowerCase()
+				.trim()
+				// Remove common question variations that don't change search intent
+				.replace(/\?+$/, '') // Remove trailing question marks
+				.replace(/\s+/g, ' ') // Normalize whitespace
+				.replace(/^(what|how|why|when|where|who)\s+(is|are|does|do|did|will|would|could|should)\s+/i, '$1 ') // Normalize question starters
+				.replace(/\b(the|a|an)\b/g, '') // Remove articles
+				.replace(/\s+/g, ' ') // Clean up whitespace again
+				.trim();
+
+			// Include user location if present (affects search context)
+			const location = ctx.getUserLocation();
+			const locationHash = location ? createStableHash(JSON.stringify(location)) : 'no-location';
+			
+			// Create cache key based on normalized question + location
+			const cacheKey = createStableHash(`${normalizedQuestion}:${locationHash}`);
+			
+			console.log(`🔑 Query plan cache key generated: ${cacheKey} (question: "${question.substring(0, 60)}...")`);
+			return cacheKey;
+		},
+	}
+); 
